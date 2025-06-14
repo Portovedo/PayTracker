@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Upload Payslip - PayslipManager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <header>
+      <h1>Payslip Manager</h1>
+      <nav>
+        <ul>
+          <li><a href="{{ url_for('upload_form') }}">Upload Payslip</a></li>
+          <li><a href="{{ url_for('view_payslips') }}">View Dashboard & Data</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div class="container">
+      <h2>Upload New Payslip PDF</h2>
+      <form method="POST" action="{{ url_for('upload_file_route') }}" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".pdf" required>
+        <input type="submit" value="Upload & Process">
+      </form>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <ul class="flashes">
+          {% for category, message in messages %}
+            {# Default to 'info' if category is not one of the expected ones #}
+            {% set category_class = category if category in ['success', 'error', 'warning'] else 'info' %}
+            <li class="{{ category_class }}">{{ message }}</li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+    </div>
+
+    <footer>
+      <p>&copy; {{ now.year }} Payslip Manager</p>
+    </footer>
+  </body>
+</html>
