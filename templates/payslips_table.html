@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Dashboard & Data - PayslipManager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Payslip Manager</h1>
+      <nav>
+        <ul>
+          <li><a href="{{ url_for('upload_form') }}">Upload Payslip</a></li>
+          <li><a href="{{ url_for('view_payslips') }}">View Dashboard & Data</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div class="container">
+      <h2>Payslip Dashboard</h2>
+      <div class="charts-container">
+        <div class="chart-card">
+          <h3>Net Income Trend</h3>
+          <canvas id="netIncomeChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Meal Allowance Trend</h3>
+          <canvas id="mealAllowanceChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Worked Days Trend</h3>
+          <canvas id="workedDaysChart"></canvas>
+        </div>
+      </div>
+
+      <h2>Stored Payslip Data</h2>
+      {% if payslips %}
+        <table>
+          <thead>
+            <tr>
+              <th>Filename</th>
+              <th>Month</th>
+              <th>Year</th>
+              <th>Net Income</th>
+              <th>Meal Allowance</th>
+              <th>Worked Days</th>
+              <th>Uploaded At (UTC)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for payslip in payslips %}
+              <tr>
+                <td>{{ payslip.filename }}</td>
+                <td>{{ payslip.month }}</td>
+                <td>{{ payslip.year }}</td>
+                <td>{{ "%.2f"|format(payslip.net_income) if payslip.net_income is not none else 'N/A' }}</td>
+                <td>{{ "%.2f"|format(payslip.meal_allowance) if payslip.meal_allowance is not none else 'N/A' }}</td>
+                <td>{{ payslip.worked_days if payslip.worked_days is not none else 'N/A' }}</td>
+                <td>{{ payslip.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') if payslip.uploaded_at else 'N/A' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>No payslip data found. <a href="{{ url_for('upload_form') }}">Upload some first!</a></p>
+      {% endif %}
+    </div>
+
+    <footer>
+      <p>&copy; {{ now.year }} Payslip Manager</p>
+    </footer>
+
+    <script>
+      // Use tojson filter for robust JSON conversion, then parse.
+      // The controller passes a dictionary, tojson makes it a valid JSON string for JS.
+      const chartData = JSON.parse({{ chart_data | tojson | safe }});
+
+      const labels = chartData.labels || [];
+      const netIncomeData = chartData.net_income_data || [];
+      const mealAllowanceData = chartData.meal_allowance_data || [];
+      const workedDaysData = chartData.worked_days_data || [];
+
+      function createChart(ctx, type, label, data, borderColor, bgColor, beginAtZero = false) {
+        if (ctx && labels.length > 0) {
+          new Chart(ctx, {
+            type: type,
+            data: {
+              labels: labels,
+              datasets: [{
+                label: label,
+                data: data,
+                borderColor: borderColor,
+                backgroundColor: bgColor, // For line charts, this is area under line if fill:true
+                tension: 0.1,
+                fill: type === 'line' // Fill only for line charts
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: beginAtZero
+                }
+              }
+            }
+          });
+        } else if (ctx && labels.length === 0) {
+          ctx.parentElement.innerHTML += "<p style='text-align:center; margin-top:20px;'>No data to display in chart.</p>";
+        }
+      }
+
+      createChart(
+        document.getElementById('netIncomeChart'),
+        'line',
+        'Net Income',
+        netIncomeData,
+        'rgb(75, 192, 192)',
+        'rgba(75, 192, 192, 0.2)'
+      );
+
+      createChart(
+        document.getElementById('mealAllowanceChart'),
+        'line',
+        'Meal Allowance',
+        mealAllowanceData,
+        'rgb(255, 159, 64)',
+        'rgba(255, 159, 64, 0.2)'
+      );
+
+      createChart(
+        document.getElementById('workedDaysChart'),
+        'bar',
+        'Worked Days',
+        workedDaysData,
+        'rgb(54, 162, 235)',
+        'rgba(54, 162, 235, 0.5)',
+        true // beginAtZero for bar chart y-axis
+      );
+    </script>
+  </body>
+</html>
